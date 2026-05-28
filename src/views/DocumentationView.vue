@@ -33,23 +33,25 @@
     </div>
     
     <!-- Table of Contents Sidebar -->
-    <aside v-if="!loading && toc.length > 0" class="hidden xl:block w-64 shrink-0">
-      <div class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
-        <h4 class="text-xs font-bold text-slate-900 dark:text-slate-100 mb-4 uppercase tracking-widest">On this page</h4>
-        <nav class="space-y-1.5 border-l-2 border-slate-100 dark:border-slate-800">
-          <a 
-            v-for="item in toc" 
-            :key="item.id" 
-            :href="`#${item.id}`"
-            :class="[
-              'block text-sm py-1 border-l-2 -ml-[2px] transition-colors',
-              item.level === 3 ? 'pl-5 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent' 
-                               : 'pl-3 font-medium text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent'
-            ]"
-          >
-            {{ item.text }}
-          </a>
-        </nav>
+    <aside v-if="!loading && toc.length > 0" class="hidden xl:block w-72 shrink-0">
+      <div class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-3xl bg-white/95 dark:bg-slate-900/95 shadow-sm backdrop-blur-xl">
+        <div class="px-4 py-5">
+          <h4 class="text-xs font-bold text-slate-900 dark:text-slate-100 mb-4 uppercase tracking-widest">On this page</h4>
+          <nav class="space-y-1.5 border-l-2 border-slate-100 dark:border-slate-800">
+            <a 
+              v-for="item in toc" 
+              :key="item.id" 
+              :href="`#${item.id}`"
+              :class="[
+                'block text-sm py-1 border-l-2 -ml-[2px] transition-colors',
+                item.level === 3 ? 'pl-5 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent' 
+                                 : 'pl-3 font-medium text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent'
+              ]"
+            >
+              {{ item.text }}
+            </a>
+          </nav>
+        </div>
       </div>
     </aside>
     

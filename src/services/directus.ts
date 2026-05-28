@@ -78,7 +78,7 @@ export async function searchSections(query: string): Promise<Section[]> {
     const sections = await directus.request(readItems('sections', {
       search: query,
       limit: 5,
-      fields: ['slug', 'title'] as any
+      fields: ['slug', 'title', 'content'] as any
     }));
     return sections as Section[];
   } catch (error) {
