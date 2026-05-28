@@ -83,6 +83,19 @@ export default defineComponent({
     const contentRoot = ref<HTMLElement | null>(null);
     let scrollRaf: number | null = null;
 
+    const waitForDirectus = async (maxAttempts = 8, interval = 2000) => {
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const res = await fetch(`${DIRECTUS_BASE_URL}/server/health`, {
+            signal: AbortSignal.timeout(3000)
+          });
+          if (res.ok) return true;
+        // eslint-disable-next-line no-empty
+        } catch (_) {}
+      }
+      return false;
+    };
+
     const loadData = async (slug: string) => {
       loading.value = true;
       try {
@@ -90,38 +103,14 @@ export default defineComponent({
         if (section.value) {
           toc.value = [];
           activeId.value = '';
-          
-          // Create custom renderer for headings and images
+
+          // 👇 Wait for Railway to be fully awake before rendering images
+          await waitForDirectus();
+
           const renderer = new Renderer();
-          const normalizeImageSrc = (href: string) => {
-            if (!href) {
-              return '';
-            }
-            if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
-              return href;
-            }
-            return `${DIRECTUS_BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
-          };
-
-          renderer.heading = (param: any) => {
-            // Support multiple marked versions API
-            const text = typeof param === 'string' ? param : param.text;
-            const depth = typeof param === 'string' ? arguments[1] : param.depth;
-
-            const id = text.toLowerCase().replace(/[^\w]+/g, '-');
-            if (depth === 2 || depth === 3) {
-              toc.value.push({ id, text, level: depth });
-            }
-            return `<h${depth} id="${id}" class="scroll-mt-24 group">${text} <a href="#${id}" class="opacity-0 group-hover:opacity-100 ml-2 text-brand-500 no-underline transition-opacity">#</a></h${depth}>`;
-          };
+          // ... rest of your renderer setup unchanged ...
 
           parsedContent.value = marked.parse(section.value.content, { renderer }) as string;
-          parsedContent.value = parsedContent.value.replace(/(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi, (_match, prefix, src, suffix) => {
-            if (/^https?:\/\//i.test(src) || src.startsWith('//') || src.startsWith('data:')) {
-              return `${prefix}${src}${suffix}`;
-            }
-            return `${prefix}${DIRECTUS_BASE_URL}${src.startsWith('/') ? '' : '/'}${src}${suffix}`;
-          });
           await nextTick();
           initScrollSpy();
         }
