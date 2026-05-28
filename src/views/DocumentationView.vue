@@ -20,7 +20,7 @@
           <img :src="section.image_url" :alt="section.title" class="w-full h-auto object-cover transform group-hover:scale-[1.02] transition-transform duration-500" />
         </div>
 
-        <div class="prose max-w-none" v-html="parsedContent"></div>
+        <div ref="contentRoot" class="prose max-w-none" v-html="parsedContent"></div>
       </div>
       
       <div v-else class="flex flex-col items-center justify-center pt-24 text-center">
@@ -45,7 +45,8 @@
               :class="[
                 'block text-sm py-1 border-l-2 -ml-[2px] transition-colors',
                 item.level === 3 ? 'pl-5 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent' 
-                                 : 'pl-3 font-medium text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent'
+                                 : 'pl-3 font-medium text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-500 border-transparent',
+                activeId === item.id ? 'text-brand-600 dark:text-brand-400 border-brand-500 font-semibold' : ''
               ]"
             >
               {{ item.text }}
@@ -59,7 +60,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted } from 'vue';
+import { defineComponent, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { fetchSectionBySlug, Section } from '@/services/directus';
 import { marked, Renderer } from 'marked';
@@ -78,6 +79,9 @@ export default defineComponent({
     const parsedContent = ref<string>('');
     const loading = ref(true);
     const toc = ref<TocItem[]>([]);
+    const activeId = ref<string>('');
+    const contentRoot = ref<HTMLElement | null>(null);
+    let scrollRaf: number | null = null;
 
     const loadData = async (slug: string) => {
       loading.value = true;
@@ -85,6 +89,7 @@ export default defineComponent({
         section.value = await fetchSectionBySlug(slug);
         if (section.value) {
           toc.value = [];
+          activeId.value = '';
           
           // Create custom renderer for headings
           const renderer = new Renderer();
@@ -101,6 +106,8 @@ export default defineComponent({
           };
 
           parsedContent.value = marked.parse(section.value.content, { renderer }) as string;
+          await nextTick();
+          initScrollSpy();
         }
       } catch (e) {
         console.error(e);
@@ -108,11 +115,6 @@ export default defineComponent({
         loading.value = false;
       }
     };
-
-    onMounted(() => {
-      const slug = (route.params.slug as string) || 'fine-tuning-cli';
-      loadData(slug);
-    });
 
     watch(
       () => route.params.slug,
@@ -123,11 +125,61 @@ export default defineComponent({
       }
     );
 
+    const getHeadingElements = () => {
+      return contentRoot.value ? Array.from(contentRoot.value.querySelectorAll('h2[id], h3[id]')) as HTMLElement[] : [];
+    };
+
+    const updateActiveId = () => {
+      const headings = getHeadingElements();
+      if (!headings.length) {
+        activeId.value = '';
+        return;
+      }
+
+      const scrollPosition = window.scrollY + 140;
+      let currentId = headings[0].id;
+
+      for (const heading of headings) {
+        const headingTop = heading.getBoundingClientRect().top + window.scrollY;
+        if (headingTop <= scrollPosition) {
+          currentId = heading.id;
+        }
+      }
+
+      activeId.value = currentId;
+    };
+
+    const onScroll = () => {
+      if (scrollRaf !== null) {
+        return;
+      }
+      scrollRaf = window.requestAnimationFrame(() => {
+        updateActiveId();
+        scrollRaf = null;
+      });
+    };
+
+    const initScrollSpy = () => {
+      updateActiveId();
+    };
+
+    onMounted(() => {
+      const slug = (route.params.slug as string) || 'fine-tuning-cli';
+      loadData(slug);
+      window.addEventListener('scroll', onScroll, { passive: true });
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('scroll', onScroll);
+    });
+
     return {
       section,
       parsedContent,
       loading,
-      toc
+      toc,
+      activeId,
+      contentRoot
     };
   }
 });
