@@ -62,7 +62,7 @@
 <script lang="ts">
 import { defineComponent, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
-import { fetchSectionBySlug, Section } from '@/services/directus';
+import { fetchSectionBySlug, Section, DIRECTUS_BASE_URL } from '@/services/directus';
 import { marked, Renderer } from 'marked';
 
 interface TocItem {
@@ -91,18 +91,34 @@ export default defineComponent({
           toc.value = [];
           activeId.value = '';
           
-          // Create custom renderer for headings
+          // Create custom renderer for headings and images
           const renderer = new Renderer();
+          const normalizeImageSrc = (href: string) => {
+            if (!href) {
+              return '';
+            }
+            if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
+              return href;
+            }
+            return `${DIRECTUS_BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+          };
+
           renderer.heading = (param: any) => {
             // Support multiple marked versions API
             const text = typeof param === 'string' ? param : param.text;
             const depth = typeof param === 'string' ? arguments[1] : param.depth;
-            
+
             const id = text.toLowerCase().replace(/[^\w]+/g, '-');
             if (depth === 2 || depth === 3) {
               toc.value.push({ id, text, level: depth });
             }
             return `<h${depth} id="${id}" class="scroll-mt-24 group">${text} <a href="#${id}" class="opacity-0 group-hover:opacity-100 ml-2 text-brand-500 no-underline transition-opacity">#</a></h${depth}>`;
+          };
+
+          renderer.image = ({ href, title, text }: any) => {
+            const src = normalizeImageSrc(href || '');
+            const titleAttr = title ? ` title="${title}"` : '';
+            return `<img src="${src}" alt="${text}"${titleAttr} class="block mx-auto my-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-full" />`;
           };
 
           parsedContent.value = marked.parse(section.value.content, { renderer }) as string;

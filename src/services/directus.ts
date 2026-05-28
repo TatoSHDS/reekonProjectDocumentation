@@ -9,8 +9,11 @@ export interface Section {
   order: number;
 }
 
+// Directus base URL used for asset URLs and markdown image paths
+export const DIRECTUS_BASE_URL = 'http://localhost:8055';
+
 // Create a Directus client
-export const directus = createDirectus('http://localhost:8055').with(rest());
+export const directus = createDirectus(DIRECTUS_BASE_URL).with(rest());
 
 // Mock data in case Directus is unreachable
 const mockSections: Section[] = [
