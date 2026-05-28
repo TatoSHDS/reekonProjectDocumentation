@@ -2,6 +2,8 @@
 node_modules
 /dist
 
+# Directus local uploads (images served from Railway instead)
+uploads/
 
 # local env files
 .env.local

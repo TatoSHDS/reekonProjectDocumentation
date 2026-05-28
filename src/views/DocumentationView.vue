@@ -115,13 +115,13 @@ export default defineComponent({
             return `<h${depth} id="${id}" class="scroll-mt-24 group">${text} <a href="#${id}" class="opacity-0 group-hover:opacity-100 ml-2 text-brand-500 no-underline transition-opacity">#</a></h${depth}>`;
           };
 
-          renderer.image = ({ href, title, text }: any) => {
-            const src = normalizeImageSrc(href || '');
-            const titleAttr = title ? ` title="${title}"` : '';
-            return `<img src="${src}" alt="${text}"${titleAttr} class="block mx-auto my-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-full" />`;
-          };
-
           parsedContent.value = marked.parse(section.value.content, { renderer }) as string;
+          parsedContent.value = parsedContent.value.replace(/(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi, (_match, prefix, src, suffix) => {
+            if (/^https?:\/\//i.test(src) || src.startsWith('//') || src.startsWith('data:')) {
+              return `${prefix}${src}${suffix}`;
+            }
+            return `${prefix}${DIRECTUS_BASE_URL}${src.startsWith('/') ? '' : '/'}${src}${suffix}`;
+          });
           await nextTick();
           initScrollSpy();
         }

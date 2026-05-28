@@ -10,7 +10,7 @@ export interface Section {
 }
 
 // Directus base URL used for asset URLs and markdown image paths
-export const DIRECTUS_BASE_URL = 'http://localhost:8055';
+export const DIRECTUS_BASE_URL = process.env.VUE_APP_DIRECTUS_BASE_URL?.trim() || 'http://localhost:8055';
 
 // Create a Directus client
 export const directus = createDirectus(DIRECTUS_BASE_URL).with(rest());
