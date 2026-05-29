@@ -76,7 +76,7 @@ export async function fetchSectionBySlug(slug: string): Promise<Section | null> 
 
 export async function searchSections(query: string): Promise<Section[]> {
   if (!query) return [];
-  
+
   try {
     const sections = await directus.request(readItems('sections', {
       search: query,
@@ -87,8 +87,8 @@ export async function searchSections(query: string): Promise<Section[]> {
   } catch (error) {
     console.warn('Directus search failed. Using mock search.');
     const lowerQuery = query.toLowerCase();
-    return mockSections.filter(s => 
-      s.title.toLowerCase().includes(lowerQuery) || 
+    return mockSections.filter(s =>
+      s.title.toLowerCase().includes(lowerQuery) ||
       s.content.toLowerCase().includes(lowerQuery)
     );
   }

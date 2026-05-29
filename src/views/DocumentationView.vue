@@ -104,15 +104,46 @@ export default defineComponent({
           toc.value = [];
           activeId.value = '';
 
-          // 👇 Wait for Railway to be fully awake before rendering images
           await waitForDirectus();
 
           const renderer = new Renderer();
-          // ... rest of your renderer setup unchanged ...
+
+          const normalizeImageSrc = (href: string) => {
+            if (!href) return '';
+            if (/^https?:\/\//i.test(href) || href.startsWith('//')) return href;
+            return `${DIRECTUS_BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+          };
+
+          renderer.heading = (param: any) => {
+            const rawText = typeof param === 'object' ? (param.text ?? '') : String(param ?? '');
+            const depth = Number(typeof param === 'object' ? (param.depth ?? 2) : 2); // 👈 Number() coercion
+            const plainText = rawText.replace(/<[^>]*>/g, ''); // strip HTML tags for clean id
+            const id = plainText.toLowerCase().replace(/[^\w]+/g, '-');
+            if (depth === 2 || depth === 3) {
+              toc.value.push({ id, text: plainText, level: depth });
+            }
+            return `<h${depth} id="${id}" class="scroll-mt-24 group">${rawText} <a href="#${id}" class="opacity-0 group-hover:opacity-100 ml-2 text-brand-500 no-underline transition-opacity">#</a></h${depth}>`;
+          };
+
+          renderer.image = (param: any) => {
+            const href = typeof param === 'string' ? param : param.href;
+            const text = typeof param === 'string' ? '' : (param.text ?? '');
+            const normalizedHref = normalizeImageSrc(href);
+            return `<img data-src="${normalizedHref}" alt="${text}" loading="lazy" />`;
+          };
 
           parsedContent.value = marked.parse(section.value.content, { renderer }) as string;
           await nextTick();
           initScrollSpy();
+
+          // Stagger image loading — one every 300ms
+          const images = contentRoot.value?.querySelectorAll('img[data-src]') ?? [];
+          images.forEach((img, i) => {
+            setTimeout(() => {
+              const src = img.getAttribute('data-src') ?? '';
+              (img as HTMLImageElement).src = src;
+            }, i * 300);
+          });
         }
       } catch (e) {
         console.error(e);
